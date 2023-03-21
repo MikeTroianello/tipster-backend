@@ -1,23 +1,25 @@
-var express = require("express");
+var express = require('express');
 var router = express.Router();
 
-const User = require("../models/User");
+const User = require('../models/User');
 
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const saltRounds = 10;
 
-const isAuthenticated = require("../middleware/isAuthenticated");
+const isAuthenticated = require('../middleware/isAuthenticated');
 
-router.post("/signup", (req, res) => {
+const { verify } = require('../controllers/auth');
+
+router.post('/signup', (req, res) => {
   if (!req.body.email || !req.body.password) {
-    return res.status(400).json({ message: "please fill out all fields" });
+    return res.status(400).json({ message: 'please fill out all fields' });
   }
 
   User.findOne({ email: req.body.email })
     .then((foundUser) => {
       if (foundUser) {
-        return res.status(400).json({ message: "Email is already taken" });
+        return res.status(400).json({ message: 'Email is already taken' });
       } else {
         const salt = bcrypt.genSaltSync(saltRounds);
         const hashedPass = bcrypt.hashSync(req.body.password, salt);
@@ -37,8 +39,8 @@ router.post("/signup", (req, res) => {
             };
 
             const token = jwt.sign(payload, process.env.SECRET, {
-              algorithm: "HS256",
-              expiresIn: "24hr",
+              algorithm: 'HS256',
+              expiresIn: '24hr',
             });
             res.json({ token: token, id: createdUser._id });
           })
@@ -52,9 +54,9 @@ router.post("/signup", (req, res) => {
     });
 });
 
-router.post("/login", (req, res) => {
+router.post('/login', (req, res) => {
   if (!req.body.email || !req.body.password) {
-    return res.status(400).json({ message: "please fill out both fields" });
+    return res.status(400).json({ message: 'please fill out both fields' });
   }
 
   User.findOne({ email: req.body.email })
@@ -62,7 +64,7 @@ router.post("/login", (req, res) => {
       if (!foundUser) {
         return res
           .status(401)
-          .json({ message: "Email or Password is incorrect!" });
+          .json({ message: 'Email or Password is incorrect!' });
       }
 
       const doesMatch = bcrypt.compareSync(
@@ -79,8 +81,8 @@ router.post("/login", (req, res) => {
         };
 
         const token = jwt.sign(payload, process.env.SECRET, {
-          algorithm: "HS256",
-          expiresIn: "24hr",
+          algorithm: 'HS256',
+          expiresIn: '24hr',
         });
         res.json({
           token: token,
@@ -91,7 +93,7 @@ router.post("/login", (req, res) => {
       } else {
         return res
           .status(402)
-          .json({ message: "Email or Password is incorrect" });
+          .json({ message: 'Email or Password is incorrect' });
       }
     })
     .catch((err) => {
@@ -99,8 +101,6 @@ router.post("/login", (req, res) => {
     });
 });
 
-router.get("/verify", isAuthenticated, (req, res) => {
-  return res.status(200).json(req.user);
-});
+router.get('/verify', isAuthenticated, verify);
 
 module.exports = router;
